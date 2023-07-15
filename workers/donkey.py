@@ -1,14 +1,14 @@
 import json
-import random
 import threading
 import time
-
 import requests
 import schedule as schedule
 
 from workers.lib import html_parser, dataclass_helper
 from loguru import logger
 
+from workers.lib.cookie_helpers import cookie_to_dict
+from workers.lib.error_messages import msg_error
 from workers.types.interfaces import \
     InterfaceLogin, \
     InterfaceCalendarData, \
@@ -17,35 +17,35 @@ from workers.types.interfaces import \
 
 class Donkey:
     urls = {
-        "__main__page": "https://consul.mofa.go.kr/",
+        "__main__page": "https://consul.mofa.go.kr/ciph/0800/selectCIPH0801Deng.do",
         "__login__user": "https://consul.mofa.go.kr/cipl/0100/loginProcess.do",
         "__calendar_endpoint": "https://consul.mofa.go.kr/ciph/0800/selectVisitReserveCalendarYes.do",
         "__get_reservation_time_endpoint": "https://consul.mofa.go.kr/ciph/0800/selectVisitReserveTime.do",
-        "__reservation_endpoint": "https://consul.mofa.go.kr/ciph/0800/selectVisitReserveTime.do"
+        "__reservation_endpoint": "https://consul.mofa.go.kr/ciph/0800/insertResveVisitEng.do",
+        "__get_captcha_endpoint": "http://192.168.0.106:8000/api/v1/tasks/get-captcha-solve/"
     }
 
-    functions = [
-        "__checker_auth_pool",
-        "login"
-    ]
-
     delay_ms = 3000
+    logout_ms = 4000
+    attacking_time = "20:25"
 
-    attacking_time = "01:42"
+    attackingEvent = threading.Event()
+    scheduleEvent = threading.Event()
+    logoutEvent = threading.Event()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Initial box of class
-        self.scheduleEvent = None
-        self.logoutEvent = None
+        self.captcha_text: str = ""
+        self.shorting_url = 26
         self.isAuth = False
 
         # Some instance of important classes for work
         self.session = requests.Session()
 
         # Typimg datas for requests
-        self.user = InterfaceLogin(loginId="kadyrovshavkatbek030@mailkg.ru")
+        self.user = InterfaceLogin(loginId="aeliot922@gmail.com")
         self.calendar = InterfaceCalendarData(
             emblCd="GR",
             emblTime="202307",
@@ -66,11 +66,11 @@ class Donkey:
         logger.info("Schedule has started for attacking time %s " % self.attacking_time)
 
         # scheduleEvent this code for start new Threading instance for run Schedule pooling
-        self.scheduleEvent = self.run_continuously()
+        self.run_continuously()
         logger.success("Schedule proccess has successfully started... ")
 
         # logoutEvent this code for start new Threading instance for run Tesing logout handlers every some time
-        self.logoutEvent = self.run_logout_continuously()
+        self.run_logout_continuously()
         logger.success("Test logouting thread has started for every time... ")
 
         logger.debug("All processes: %s" % threading.active_count())
@@ -86,12 +86,10 @@ class Donkey:
                 logger.warning("Authentication is failed. Trying login again...")
                 self.login()
             else:
-                logger.info("User authenticated...")
-
                 # Sleep for secure session of block
                 time.sleep(self.delay_ms / 1000)
 
-    def __set_attacking_thread(self, interval=1):
+    def __set_attacking_thread(self):
 
         """
             The code defines a function __set_attacking_thread that creates a continuous thread.
@@ -102,25 +100,20 @@ class Donkey:
         """
 
         try:
-            # self.logoutEvent.set()
             self.scheduleEvent.set()
         except Exception or None as e:
             logger.error(e.args)
 
-        cease_continuous_run = threading.Event()
-
         class TargettingThread(threading.Thread):
             @classmethod
             def run(cls):
-                while not cease_continuous_run.is_set():
+                while not self.attackingEvent.is_set():
                     self.attacking()
-                    time.sleep(interval)
 
         continuous_thread = TargettingThread()
         continuous_thread.start()
 
-    @staticmethod
-    def run_continuously(interval=1):
+    def run_continuously(self, interval=1):
         """Continuously run, while executing pending jobs at each
         elapsed time interval.
         @return cease_continuous_run: threading. Event which can
@@ -131,49 +124,58 @@ class Donkey:
         interval of one hour then your job won't be run 60 times
         at each interval but only once.
         """
-        cease_continuous_run = threading.Event()
 
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
-                while not cease_continuous_run.is_set():
+                while not self.scheduleEvent.is_set():
                     schedule.run_pending()
                     time.sleep(interval)
 
         continuous_thread = ScheduleThread()
         continuous_thread.start()
-        return cease_continuous_run
 
-    def run_logout_continuously(self, interval=1):
-        logout_continuously = threading.Event()
+    def run_logout_continuously(self):
+
+        """
+            The run_logout_continuously function sets up a separate thread that repeatedly
+            calls the self.logout() method at a specified interval until a specific event (self.logoutEvent)
+            is triggered. It provides a way to continuously perform logout actions in the background without
+            blocking the main program. To use this function, simply call it on an instance of the class containing
+            the method, and ensure the self.logout and self.logoutEvent are implemented and used appropriately
+            within the code.
+
+        """
 
         class ScheduleLogoutThread(threading.Thread):
             @classmethod
             def run(cls):
-                while not logout_continuously.is_set():
+                while not self.logoutEvent.is_set():
                     self.logout()
-                    time.sleep(random.randint(1, 11))
+                    time.sleep(self.logout_ms / 1000)
 
         continuous_thread = ScheduleLogoutThread()
         continuous_thread.start()
-        return logout_continuously
 
     def login(self):
 
-        """ This function for authentication user to
-        mofa without any sub_threads and cycle"""
+        """
+            The login function handles user authentication for the "mofa" system. It sends an
+            HTTP POST request to a specified URL with user data for authentication.
+            The response is then processed to determine if the authentication was successful.
+        """
 
         try:
-            logger.debug("Session posting... [Login]")
-
-            response = self.session.post(
+            r = self.session.post(
                 allow_redirects=True,
                 url=self.urls.get("__login__user"),
                 data=dataclass_helper.get_dict(self.user)
             )
-
+            logger.debug(
+                f"{r.url}"[self.shorting_url:]
+            )
             self.isAuth = html_parser.isUsrExist(
-                html=response.text
+                html=r.text
             )
 
         except requests.exceptions.RequestException as e:
@@ -187,14 +189,21 @@ class Donkey:
         """ Getting main page using http requests
             - Can update cookie
             - Can get username to check exist on main view. If exist then bot has authenticated else not
+
+            The __getter_main_page function retrieves the main page using an HTTP GET request.
+            It checks if the user is authenticated by examining the response from the server and
+            sets the isAuth flag accordingly.
         """
 
         try:
-            response = self.session.get(
+            r = self.session.get(
                 url=self.urls.get("__main__page")
             )
+            logger.debug(
+                f"{r.url}"[self.shorting_url:]
+            )
             self.isAuth = html_parser.isUsrExist(
-                html=response.text
+                html=r.text
             )
             return self.isAuth
         except requests.exceptions.RequestException as e:
@@ -202,56 +211,99 @@ class Donkey:
             return
 
     def make_reservation(self, obj):
-        """ This function for authentication user to
-                        mofa without any sub_threads and cycle"""
-        logger.info(f"{obj}")
-        # try:
-        #     logger.debug("Sending reservation complection... [Data]")
-        #     payload = InterfaceReservationData(
-        #         timeCd="",
-        #         visitDe="",
-        #         remk="Assalom Aleikum",
-        #         resveTimeNm="",
-        #         visitResveId="",
-        #     )
-        #
-        #     r = self.session.post(
-        #         allow_redirects=True,
-        #         url=self.urls.get("__reservation_endpoint"),
-        #         data=dataclass_helper.get_dict(payload)
-        #     )
-        #     response = json.loads(r.content)
-        #     for obj in response:
-        #         if obj["visitYn"] == "Y" and self.isAuth:
-        #             break
-        #
-        # except requests.exceptions.RequestException as e:
-        #     logger.error(e.args)
+
+        """
+            The make_reservation function is used to make a reservation. Here's a short description of its usage:
+
+            Call the make_reservation method on an instance of the class, providing the necessary obj parameter containing reservation details.
+            The function sends an HTTP POST request to the reservation endpoint URL with the payload data.
+            The server response is parsed as JSON, and specific error conditions are checked.
+            Depending on the response, different actions are taken, such as logging errors or setting event flags.
+            If no errors occur, event flags are set and a warning message is logged indicating the bot has stopped, possibly due to unknown errors or replacement.
+            Exception handling is in place to catch request-related or general exceptions, with appropriate logging.
+
+        :param obj:
+        :return:
+        """
+
+        try:
+            payload = InterfaceReservationData(
+                timeCd=obj["timeCd"],
+                visitDe=obj["visitDe"],
+                remk="Assalom Aleikum",
+                resveTimeNm=obj["timeNm"][:5],
+                visitResveId=obj["visitResveId"],
+                captchaTxt=self.captcha_text,
+            )
+            r = self.session.post(
+                allow_redirects=True,
+                url=self.urls.get("__reservation_endpoint"),
+                data=dataclass_helper.get_dict(payload)
+            )
+            response = json.loads(r.content)
+
+            if response.get("wsdlErrorNm") == "실패":
+                logger.error(msg_error.get(
+                    response.get("wsdlErrorNm")
+                ))
+                return
+
+            if response.get("result") == 0:
+                logger.error(
+                    msg_error.get("captcha")
+                )
+                return
+
+            params: dict = response.get("param")
+            if params.get("errMsg") == "E03":
+                return
+
+            if params.get("E01") or params.get("E02"):
+                logger.error("Unknown error from server. Bot has stopped!")
+
+            self.scheduleEvent.set()
+            self.logoutEvent.set()
+            self.attackingEvent.set()
+            logger.warning("Bot has stopped. Perhaps bot taken place or got unknown error")
+
+        except requests.exceptions.RequestException or Exception as e:
+            logger.error(e.args)
 
     def get_reservation_times(self, obj):
 
-        """ This function for authentication user to
-            mofa without any sub_threads and cycle"""
+        """
+        The get_reservation_times function retrieves reservation times for a specific date. Here's a short description of its usage:
+
+        Call the get_reservation_times method on an instance of the class, providing the required obj parameter containing reservation details.
+        The function creates a payload using the InterfaceReservationParams class and the provided obj parameters.
+        An HTTP POST request is sent to the reservation time endpoint URL specified by self.urls.get("__get_reservation_time_endpoint"), with the payload data included in the request.
+        The server response is parsed as JSON, and the function iterates through the resveResult objects in the response.
+        If a reservation is available (visitYn is "Y"), the make_reservation method is called, passing the reservation details from the response object.
+        Only the first available reservation is processed, and the loop is terminated using break.
+        Exception handling is in place to catch request-related or general exceptions, with appropriate logging.
+
+        """
         payload = InterfaceReservationParams(
             emblCd=obj["emblCd"],
             visitDe=obj["visitDe"],
             visitResveBussGrpCd=self.calendar.visitResveBussGrpCd
         )
         try:
-            logger.debug("Getting reservation data complection... [Data]")
             r = self.session.post(
                 allow_redirects=True,
                 url=self.urls.get("__get_reservation_time_endpoint"),
                 data=dataclass_helper.get_dict(payload)
             )
+            logger.debug(
+                f"{r.url}"[self.shorting_url:]
+            )
             response = json.loads(r.content)
-            print(response)
-            # for obj in response["resveResult"]:
-            #     if obj["visitYn"] == "Y":
-            #         self.make_reservation(obj)
-            #         break
+            for obj in response["resveResult"]:
+                if obj["visitYn"] == "Y":
+                    self.make_reservation(obj)
+                    break
 
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException or Exception as e:
             logger.error(e.args)
 
     def attacking(self):
@@ -259,22 +311,33 @@ class Donkey:
         """ This function for authentication user to
                 mofa without any sub_threads and cycle"""
 
-        try:
-            logger.debug("Getting calendar data... [Data]")
+        self.get_captcha()
 
+        try:
             r = self.session.post(
                 allow_redirects=True,
                 url=self.urls.get("__calendar_endpoint"),
                 data=dataclass_helper.get_dict(self.calendar)
             )
+            logger.debug(
+                f"{r.url}"[self.shorting_url:]
+            )
             response = json.loads(r.content)
-            for obj in response["visitReserveCalendarYesResult"]:
+            for obj in response["visitReserveCalendarYesResult"][14:]:
                 if obj["visitYn"] == "Y" and self.isAuth:
                     self.get_reservation_times(obj)
                     break
 
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException or Exception as e:
             logger.error(e.args)
+
+    def get_captcha(self):
+        payload = {
+            "Cookie": cookie_to_dict(self.session.cookies)
+        }
+        r = self.session.post(self.urls.get("__get_captcha_endpoint"), data=payload)
+        response = json.loads(r.content)
+        self.captcha_text = response.get("captcha")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ class InterfaceLogin:
     cffdnCd: str = ""
     callCd: str = ""
     loginId: str = ""
-    loginPwd: str = "Mofa888!"
+    loginPwd: str = "Marat12!"
     captchaTxt: str = ""
 
 
@@ -28,12 +28,12 @@ class InterfaceReservationData:
     visitResveId: str
     remk: str
     captchaTxt: str = ""
-    emblCd: str = "KY"
+    emblCd: str = "GR"
     businessNm: str = "{\"mainKindNm\":[\"비자 접수\"],\"cffdnNm\":[\"비자 접수\"]}"
     grpNmListDB: str = "비자 접수"
     cffdnNmDB: str = "비자 접수"
-    mainKind: str = "KY0001"
-    subKind: str = "KY0001"
+    mainKind: str = "GR0001"
+    subKind: str = "GR0001"
     natnCd: str = "130"
     totcnt: int = 1
     onedaycnt: int = 1
