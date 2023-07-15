@@ -26,12 +26,10 @@ class Donkey:
     }
 
     delay_ms = 3000
-    logout_ms = 4000
     attacking_time = "20:25"
 
     attackingEvent = threading.Event()
     scheduleEvent = threading.Event()
-    logoutEvent = threading.Event()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,10 +66,6 @@ class Donkey:
         # scheduleEvent this code for start new Threading instance for run Schedule pooling
         self.run_continuously()
         logger.success("Schedule proccess has successfully started... ")
-
-        # logoutEvent this code for start new Threading instance for run Tesing logout handlers every some time
-        self.run_logout_continuously()
-        logger.success("Test logouting thread has started for every time... ")
 
         logger.debug("All processes: %s" % threading.active_count())
 
@@ -135,28 +129,6 @@ class Donkey:
         continuous_thread = ScheduleThread()
         continuous_thread.start()
 
-    def run_logout_continuously(self):
-
-        """
-            The run_logout_continuously function sets up a separate thread that repeatedly
-            calls the self.logout() method at a specified interval until a specific event (self.logoutEvent)
-            is triggered. It provides a way to continuously perform logout actions in the background without
-            blocking the main program. To use this function, simply call it on an instance of the class containing
-            the method, and ensure the self.logout and self.logoutEvent are implemented and used appropriately
-            within the code.
-
-        """
-
-        class ScheduleLogoutThread(threading.Thread):
-            @classmethod
-            def run(cls):
-                while not self.logoutEvent.is_set():
-                    self.logout()
-                    time.sleep(self.logout_ms / 1000)
-
-        continuous_thread = ScheduleLogoutThread()
-        continuous_thread.start()
-
     def login(self):
 
         """
@@ -180,9 +152,6 @@ class Donkey:
 
         except requests.exceptions.RequestException as e:
             logger.error(e.args)
-
-    def logout(self):
-        self.session.get("https://consul.mofa.go.kr/cipl/0100/logout.do")
 
     def __getter_main_page(self):
 
@@ -262,7 +231,6 @@ class Donkey:
                 logger.error("Unknown error from server. Bot has stopped!")
 
             self.scheduleEvent.set()
-            self.logoutEvent.set()
             self.attackingEvent.set()
             logger.warning("Bot has stopped. Perhaps bot taken place or got unknown error")
 
