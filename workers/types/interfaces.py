@@ -28,22 +28,15 @@ class InterfaceReservationData:
     visitResveId: str
     remk: str
     captchaTxt: str = ""
-    emblCd: str = "GR"
+    emblCd: str = "KY"
     businessNm: str = "{\"mainKindNm\":[\"비자 접수\"],\"cffdnNm\":[\"비자 접수\"]}"
     grpNmListDB: str = "비자 접수"
     cffdnNmDB: str = "비자 접수"
-    mainKind: str = "GR0001"
-    subKind: str = "GR0001"
+    mainKind: str = "KY0001"
+    subKind: str = "KY0001"
     natnCd: str = "130"
     totcnt: int = 1
     onedaycnt: int = 1
-
-
-# {
-#     "visitYn": "A",
-#     "emblCd": "KY",
-#     "visitDe": "20230901"
-# },
 
 
 @dataclasses.dataclass

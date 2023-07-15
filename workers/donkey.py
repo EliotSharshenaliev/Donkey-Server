@@ -26,7 +26,7 @@ class Donkey:
     }
 
     delay_ms = 3000
-    attacking_time = "20:25"
+    attacking_time = "09:00"
 
     attackingEvent = threading.Event()
     scheduleEvent = threading.Event()
@@ -45,9 +45,9 @@ class Donkey:
         # Typimg datas for requests
         self.user = InterfaceLogin(loginId="aeliot922@gmail.com")
         self.calendar = InterfaceCalendarData(
-            emblCd="GR",
-            emblTime="202307",
-            visitResveBussGrpCd="GR0001"
+            emblCd="KY",
+            emblTime="202308",
+            visitResveBussGrpCd="KY0001"
         )
         # Logger configuration
         logger.add("static/logs/%s__user_debug__.log" % "kadyrovshavkatbek")

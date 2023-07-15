@@ -9,25 +9,6 @@ import websocket
 
 
 class Donkey:
-    """
-    Класс Donkey представляет осла.
-
-    Атрибуты:
-    - Cookie Jar (http.cookiejar.CookieJar): Для хранение куки авторизованной сессии.
-    - Requests Session (requests.Session): Для работы http сессиями
-    - isStop (Boolean): Для остановки программы в случае если не будет валидным manifest.json
-    Методы:
-    - sound(): Воспроизводит звук, характерный для осла.
-
-    Пример использования:
-    ```
-    donkey = Donkey("127.0.0.1", debug_file: str = "user/path/to/log/file")
-    donkey.sound()  # Выводит: "И-а-а-а!"
-    donkey.eat("морковь")  # Выводит: "Бурундук ест морковь."
-    ```
-
-    """
-
     def __init__(self):
         self.ws = None
         logs_file = sys.argv[2]
