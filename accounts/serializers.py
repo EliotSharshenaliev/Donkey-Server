@@ -3,7 +3,10 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.validators import ValidationError
 
-User  = get_user_model()
+from accounts.models import UserToRegister, RegisterBox
+
+User = get_user_model()
+
 
 class SignUpSerializer(serializers.ModelSerializer):
     email = serializers.CharField(max_length=80)
@@ -15,7 +18,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         fields = ["email", "username", "password"]
 
     def validate(self, attrs):
-
         email_exists = User.objects.filter(email=attrs["email"]).exists()
 
         if email_exists:
@@ -39,3 +41,32 @@ class CurrentUserPostsSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "posts"]
+
+
+class UserToRegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(max_length=80)
+    username = serializers.CharField(max_length=45)
+    password = serializers.CharField(max_length=32)
+
+    class Meta:
+        model = UserToRegister
+        fields = ["email", "username", "password"]
+
+
+class RegisterBoxSerializer(serializers.ListSerializer):
+    child = UserToRegisterSerializer()
+
+    def create(self, validated_data):
+        box = RegisterBox.objects.create()
+        user_instances = []
+        for user_data in validated_data:
+            user_instance = UserToRegister.objects.create(box=box, **user_data)
+            user_instances.append(user_instance)
+        return user_instances
+
+    # def create(self, validated_data):
+    #     tracks_data = validated_data.pop('usertoregister')
+    #     box = RegisterBox.objects.create()
+    #     for track_data in tracks_data:
+    #         UserToRegister.objects.create(box=box, **track_data)
+    #     return box
