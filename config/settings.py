@@ -12,8 +12,7 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'accounts',
-    'worker_service',
-    'socket_service',
+    'socket_service.apps.SocketServiceConfig',
     'loguru',
     'corsheaders',
     'rest_framework',
@@ -93,7 +92,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-
-# AUTH_USER_MODEL = 'accounts.AppUser'
-
+AUTH_USER_MODEL = 'accounts.UserModel'
 MOFA_PASSWORD = "Mofa888!"
+
+
+
+PATH_TO_BOT = "workers/donkey.py"
+RUN_SCRIPT_BOT = ["python", PATH_TO_BOT]

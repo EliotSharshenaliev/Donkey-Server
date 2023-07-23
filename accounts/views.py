@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from .models import RegisterBox, UserToRegister
-from .serializers import SignUpSerializer, RegisterBoxSerializer
+from .models import UserModel
+from .serializers import SignUpSerializer, RegisterBoxSerializer, CurrentUserSerializer
 
 
 class SignUpView(generics.GenericAPIView):
@@ -26,6 +26,7 @@ class SignUpView(generics.GenericAPIView):
 
 class LoginView(APIView):
     permission_classes = []
+    serializer_class = CurrentUserSerializer
 
     def post(self, request: Request):
         username = request.data.get("username")
@@ -33,17 +34,30 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         if user is not None:
             login(request=request, user=user)
-            return Response(
-                data={
-                    "message": "Login Successfully"
-                },
-                status=status.HTTP_200_OK)
-        else:
-            return Response(
-                data={
-                    "message": "Invalid email or password"
-                },
-                status=status.HTTP_403_FORBIDDEN)
+            serializer = self.serializer_class(user)
+            return Response(serializer.data)
+        return Response(
+            data={
+                "type": "error",
+                "message": "Invalid email or password",
+                "isAuth": False,
+            },
+            status=status.HTTP_404_NOT_FOUND)
+
+
+class GetUser(APIView):
+    serializer_class = CurrentUserSerializer
+
+    def get(self, request):
+        user = request.user
+        if user.is_authenticated:
+            serializer = self.serializer_class(user)
+            return Response(serializer.data)
+        return Response(
+            data={
+                "message": "You've have not authenticated"
+            },
+            status=status.HTTP_200_OK)
 
 
 class LogOutView(APIView):

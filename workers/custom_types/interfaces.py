@@ -9,7 +9,7 @@ class InterfaceLogin:
     cffdnCd: str = ""
     callCd: str = ""
     loginId: str = ""
-    loginPwd: str = "Marat12!"
+    loginPwd: str = "Mofa888!"
     captchaTxt: str = ""
 
 

@@ -1,11 +1,33 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token
 from rest_framework.validators import ValidationError
 
 from accounts.models import UserToRegister, RegisterBox
 
 User = get_user_model()
+
+
+class CurrentUserSerializer(serializers.ModelSerializer):
+    """
+            {'id': 1, 'password': '',
+            'last_login': '2023-07-21T09:06:47Z',
+            'is_superuser': True,
+            'username': 'admin',
+            'first_name': 'wafmarat',
+            'last_name': 'awfwafwfaaw',
+            'email': '', 'is_staff': True,
+            'is_active': True,
+            'date_joined': '2023-07-20T05:05:17Z',
+            'isOnline': False,
+            'passport_number': 'AC1241252',
+            'groups': [],
+            'user_permissions': []}
+
+    """
+
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "isOnline", "passport_number", "is_superuser"]
 
 
 class SignUpSerializer(serializers.ModelSerializer):

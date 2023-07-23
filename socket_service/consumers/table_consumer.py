@@ -2,7 +2,6 @@ import json
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from socket_service.models import UserDeviceTasks
-from worker_service.serializer import UserDevicesSerializer
 
 
 class CoreConsumer(AsyncWebsocketConsumer):

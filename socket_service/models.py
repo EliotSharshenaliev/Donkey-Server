@@ -1,7 +1,11 @@
 import random
 import uuid
 
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django.db import models
+
+from accounts.models import UserModel
 
 
 class UserDeviceTasks(models.Model):
@@ -21,4 +25,15 @@ class UserDeviceTasks(models.Model):
         ordering = ["deviceId"]
 
 
+class Bot(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    started_time = models.DateTimeField(_("date joined"), default=timezone.now)
+    is_connected = models.BooleanField(default=False)
+    pid = models.CharField(max_length=5, unique=True)
+    stdout = models.CharField(max_length=255, default="")
+    stderr = models.CharField(max_length=255, default="")
+
+
+    def __str__(self):
+        return str(self.user) + "__bot"
 

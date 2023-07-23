@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from socket_service.models import UserDeviceTasks
+from socket_service.models import Bot
 
-admin.site.register(UserDeviceTasks)
+admin.site.register(Bot)

@@ -1,18 +1,18 @@
 import json
+import sys
 import threading
 import time
 import requests
 import schedule as schedule
-
-from workers.lib import html_parser, dataclass_helper
 from loguru import logger
 
-from workers.lib.cookie_helpers import cookie_to_dict
-from workers.lib.error_messages import msg_error
-from workers.types.interfaces import \
-    InterfaceLogin, \
-    InterfaceCalendarData, \
-    InterfaceReservationData, InterfaceReservationParams
+# from workers.custom_types import interfaces
+# from workers.lib import dataclass_helper, html_parser, error_messages, cookie_helpers
+
+
+#
+from lib import dataclass_helper, html_parser, error_messages, cookie_helpers
+from custom_types import interfaces
 
 
 class Donkey:
@@ -26,7 +26,7 @@ class Donkey:
     }
 
     delay_ms = 3000
-    attacking_time = "09:00"
+    attacking_time = "12:46"
 
     attackingEvent = threading.Event()
     scheduleEvent = threading.Event()
@@ -38,19 +38,25 @@ class Donkey:
         self.captcha_text: str = ""
         self.shorting_url = 26
         self.isAuth = False
-
-        # Some instance of important classes for work
         self.session = requests.Session()
 
-        # Typimg datas for requests
-        self.user = InterfaceLogin(loginId="aeliot922@gmail.com")
-        self.calendar = InterfaceCalendarData(
+        # Logger configuration
+        logs_file = sys.argv[1]
+        logger.add(f"static/logs/{logs_file}", format="{time} {level} {message}")
+
+        # Import Configurations
+        self.username = sys.argv[2]
+        manifest = json.load(open("botconfig.json"))
+
+        logger.debug(f"host={manifest.get('host')} port={manifest.get('port')}")
+
+        # Typimg datas for request
+        self.user = interfaces.InterfaceLogin(loginId="kadrovamukhab@sarnoz.com")
+        self.calendar = interfaces.InterfaceCalendarData(
             emblCd="KY",
             emblTime="202308",
             visitResveBussGrpCd="KY0001"
         )
-        # Logger configuration
-        logger.add("static/logs/%s__user_debug__.log" % "kadyrovshavkatbek")
 
     def run(self):
 
@@ -114,7 +120,7 @@ class Donkey:
         be set to cease continuous run. Please note that it is
         *intended behavior that run_continuously() does not run
         missed jobs*. For example, if you've registered a job that
-        should run every minute and you set a continuous run
+        should run every minute, and you set a continuous run
         interval of one hour then your job won't be run 60 times
         at each interval but only once.
         """
@@ -155,7 +161,7 @@ class Donkey:
 
     def __getter_main_page(self):
 
-        """ Getting main page using http requests
+        """ Getting main page using http request
             - Can update cookie
             - Can get username to check exist on main view. If exist then bot has authenticated else not
 
@@ -196,7 +202,7 @@ class Donkey:
         """
 
         try:
-            payload = InterfaceReservationData(
+            payload = interfaces.InterfaceReservationData(
                 timeCd=obj["timeCd"],
                 visitDe=obj["visitDe"],
                 remk="Assalom Aleikum",
@@ -212,14 +218,14 @@ class Donkey:
             response = json.loads(r.content)
 
             if response.get("wsdlErrorNm") == "실패":
-                logger.error(msg_error.get(
+                logger.error(error_messages.msg_error.get(
                     response.get("wsdlErrorNm")
                 ))
                 return
 
             if response.get("result") == 0:
                 logger.error(
-                    msg_error.get("captcha")
+                    error_messages.msg_error.get("captcha")
                 )
                 return
 
@@ -251,7 +257,7 @@ class Donkey:
         Exception handling is in place to catch request-related or general exceptions, with appropriate logging.
 
         """
-        payload = InterfaceReservationParams(
+        payload = interfaces.InterfaceReservationParams(
             emblCd=obj["emblCd"],
             visitDe=obj["visitDe"],
             visitResveBussGrpCd=self.calendar.visitResveBussGrpCd
@@ -279,8 +285,6 @@ class Donkey:
         """ This function for authentication user to
                 mofa without any sub_threads and cycle"""
 
-        self.get_captcha()
-
         try:
             r = self.session.post(
                 allow_redirects=True,
@@ -300,12 +304,17 @@ class Donkey:
             logger.error(e.args)
 
     def get_captcha(self):
-        payload = {
-            "Cookie": cookie_to_dict(self.session.cookies)
-        }
-        r = self.session.post(self.urls.get("__get_captcha_endpoint"), data=payload)
-        response = json.loads(r.content)
-        self.captcha_text = response.get("captcha")
+        try:
+            payload = {
+                "Cookie": cookie_helpers.cookie_to_dict(self.session.cookies)
+            }
+            r = self.session.post(self.urls.get("__get_captcha_endpoint"), data=payload)
+            response = json.loads(r.content)
+            self.captcha_text = response.get("captcha")
+            return True
+        except Exception as e:
+            logger.error(e.args)
+            return False
 
 
 if __name__ == "__main__":
